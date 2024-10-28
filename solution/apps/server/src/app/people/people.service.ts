@@ -104,10 +104,11 @@ export class PeopleService {
       params
     );
 
+    const data = (response.results ?? response.result) as PeopleDto[];
     return {
-      data: (response.results ?? response.result) as PeopleDto[],
+      data,
       totalPages: response.total_pages || 1,
-      totalRecords: response.total_records || 0,
+      totalRecords: response.total_records ?? (data.length || 0),
     };
   }
 
