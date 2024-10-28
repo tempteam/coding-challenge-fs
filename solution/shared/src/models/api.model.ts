@@ -3,3 +3,5 @@ export type ResponseDto<T> = {
   totalRecords: number;
   totalPages: number;
 };
+
+export type QueryParams = Record<string, string | number>;
