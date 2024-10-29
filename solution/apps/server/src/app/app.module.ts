@@ -12,7 +12,7 @@ import { PlanetService } from './planet/planet.service';
   imports: [
     HttpModule,
     CacheModule.register({
-      ttl: 3000, // cache duration in seconds
+      ttl: 300, // cache duration in seconds
       max: 100,
     }),
   ],

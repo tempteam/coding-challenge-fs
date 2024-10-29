@@ -1,19 +1,32 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { PlanetDto, planetSchema } from '@solution/shared';
 import { lastValueFrom } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class PlanetService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   async getPlanet(url: string): Promise<PlanetDto> {
+    const cacheKey = `planet_${url}`;
+    const cachedPlanet = await this.cacheManager.get<PlanetDto>(cacheKey);
+    if (cachedPlanet) {
+      return cachedPlanet;
+    }
+
     const planetData = await this.fetchPlanetDetails(url);
     const validatedPlanet = planetSchema.parse({
       name: planetData.name,
       terrain: planetData.terrain,
     });
+
+    await this.cacheManager.set(cacheKey, validatedPlanet, 300);
 
     return validatedPlanet;
   }
@@ -33,15 +46,15 @@ export class PlanetService {
           catchError((error) => {
             throw new HttpException(
               `Failed to fetch data from SWAPI: ${error.message}`,
-              HttpStatus.BAD_GATEWAY
+              HttpStatus.BAD_GATEWAY,
             );
-          })
-        )
+          }),
+        ),
       );
     } catch (error) {
       throw new HttpException(
         `Error fetching SWAPI data: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
